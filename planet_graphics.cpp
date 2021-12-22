@@ -19,6 +19,9 @@
 #include <time.h>
 #include<fstream>
 #include<vector>
+#include<string>
+#include <iomanip>
+#include <sstream>
 #include"spherical_grid.h"
 
 using namespace std;
@@ -90,125 +93,126 @@ void special_key(int k, int x, int y) {
 }
 
 
-void temp_to_color1(double temp, GLdouble& r, GLdouble& g, GLdouble& b) {
-  
-  double f=(temp-Tmin)/(Tmax-Tmin);
 
-  double c1=0;
-  double c2=0.25; //5 colors
+void temp_to_color(double temp, GLdouble& r, GLdouble& g, GLdouble& b) {
 
-  r=0;
-  g=0;
-  b=1;
+
+  double t1=0;
+  double t2=150;
   
+  if(temp>=t1 && temp<t2) {       // dark gray to white
+
+    r=0.2;
+    g=0.2;
+    b=0.2;
+    
+    return;
+  }
+    
+
+  t1=150;
+  t2=273;
   
-  if(f>=c1 && f<c2) {// blue to cyan
+  if(temp>=t1 && temp<t2) {       // dark gray to white
+
+    r=0.2+0.8*(temp-t1)/(t2-t1);
+    g=0.2+0.8*(temp-t1)/(t2-t1);
+    b=0.2+0.8*(temp-t1)/(t2-t1);
+    
+    return;
+  }
+
+  t1=273;
+  t2=293;
+  
+  if(temp>=t1 && temp<t2) {     //cyan
+    r=1-(temp-t1)/(t2-t1);
+    g=1;
+    b=1;
+    
+    return;
+  }
+  
+  t1=293;
+  t2=313;
+  
+  if(temp>=t1 && temp<t2) {     //blue
     r=0;
-    g=f/c2;
+    g=1-(temp-t1)/(t2-t1);
     b=1;
+    
+    return;
   }
 
-  c1=0.25;
-  c2=0.50;
-      
-  if(f>=c1 && f<c2) { //cyan to white
-    r=(f-c1)/(c2-c1);
-    g=1;
-    b=1;
+  t1=313;
+  t2=333;
+  
+  if(temp>=t1 && temp<t2) {     //brown
+    r=0.5*(temp-t1)/(t2-t1);
+    g=0.35*(temp-t1)/(t2-t1);
+    b=1-(temp-t1)/(t2-t1);
+    
+    return;
   }
   
-  c1=0.50;
-  c2=0.75;
-      
-  if(f>=c1 && f<c2) { // white to yellow
-    r=1;
-    g=1;
-    b=1-(f-c1)/(c2-c1);
-  }
-
-  c1=0.75;
-  c2=1.00;
-      
-  if(f>=c1 && f<=c2) { // yellow to red
-    r=1;
-    g=1-(f-c1)/(c2-c1);
+  t1=333;
+  t2=750;
+  
+  if(temp>=t1 && temp<t2) {     //brown to yellow 
+    r=0.5+0.5*(temp-t1)/(t2-t1);
+    g=0.35+0.65*(temp-t1)/(t2-t1);
     b=0;
+    
+    return;
   }
 
+
+  t1=750;
+  t2=1000;
   
-  if(f>1) {
-    r=0.9;
-    g=0;
-    b=0.0;
+  if(temp>=t1 && temp<t2) {     //yellow to orange
+    r=1;
+    g=1-0.5*(temp-t1)/(t2-t1);
+    b=0;
+    
+    return;
+  }
+
+  t1=1000;
+  t2=1250;
+  
+  if(temp>=t1 && temp<t2) {     //orange to red
+    r=1;
+    g=0.5-0.5*(temp-t1)/(t2-t1);
+    b=0;
+    
+    return;
+  }
+
+  t1=1250;
+  t2=1500;
+  
+  if(temp>=t1 && temp<t2) {     //red to bordeaux
+    r=1-0.25*(temp-t1)/(t2-t1);
+    g=0.0;
+    b=0.1*(temp-t1)/(t2-t1);
+    
+    return;
   }
   
+  r=0.75;
+  g=0.0;
+  b=0.1;
+    
+  return;  
 }
 
-void temp_to_color2(double temp, GLdouble& r, GLdouble& g, GLdouble& b) {
-
-  //double f=log10(8*(temp-Tmin)/(Tmax-Tmin)+2);
-  double f=1.0*(temp-Tmin)/(Tmax-Tmin)-0.0;
-    
-  double c1=0;
-  double c2=0.2; //6 colors
-  
-  r=0;
-  g=0;
-  b=1;
-  
-  if(f>=c1 && f<c2) {// blue to cyan
-    r=0;
-    g=f/c2;
-    b=1;
-  }
-
-  c1=0.20;
-  c2=0.40;
-      
-  if(f>=c1 && f<c2) { //cyan to white
-    r=(f-c1)/(c2-c1);
-    g=1;
-    b=1;
-  }
-  
-  c1=0.40;
-  c2=0.60;
-      
-  if(f>=c1 && f<c2) { // white to yellow
-    r=1;
-    g=1;
-    b=1-(f-c1)/(c2-c1);
-  }
-
-  c1=0.60;
-  c2=0.80;
-      
-  if(f>=c1 && f<=c2) { // yellow to red
-    r=1;
-    g=1-(f-c1)/(c2-c1);
-    b=0;
-  }
-  
-  c1=0.80;
-  c2=1.00;
-      
-  if(f>=c1 && f<=c2) { //  red to bordeaux
-    r=1-0.25*(f-c1)/(c2-c1);
-    g=0.0;
-    b=0.1*(f-c1)/(c2-c1);
-  }
-
-  if(f>1.0) {
-    r=0.75;
-    g=0.0;
-    b=0.1;
-    
-  }
-  
-  
+string double_to_string(double d, int precision) {
+  std::stringstream ss;
+  ss << std::fixed << std::setprecision(precision) <<d;
+  return ss.str();
 }
 
-void draw_grid();
 
 void draw_planet (void) {
 
@@ -221,6 +225,34 @@ void draw_planet (void) {
   
   glTranslatef(user_xcenter, user_ycenter, user_height); 
   glPushMatrix();
+
+  //atmosphere
+  int circle_points = 100;
+  float angle = 2.0f * 3.1416f / circle_points;
+
+  GLdouble red, green, blue;
+  temp_to_color(grid.get_Tatm(), red, green, blue);
+
+  for(int radius=1100; radius>=1000; radius--) {
+
+    double c=0.75*(1100-radius)/100.0;
+    
+    glColor3f(red*c, green*c, blue*c);
+    
+    glBegin(GL_POLYGON);
+    double angle1=0.0;
+    glVertex2d(radius * cos(0.0) , radius * sin(0.0));
+
+    for (int i=0; i<circle_points; i++) {       
+      glVertex2d(radius * cos(angle1), radius *sin(angle1));
+      angle1 += angle;
+    }
+    
+    glEnd();
+  }
+  
+  glFlush();
+
   
 
   for(auto i=0; i<1024; i++) {
@@ -228,31 +260,50 @@ void draw_planet (void) {
     double T=Tmin+i*(Tmax-Tmin)/1023.0;
     
     GLdouble red, green, blue;
-    temp_to_color2(T, red, green, blue);
+    temp_to_color(T, red, green, blue);
     glColor3f(red, green, blue);                    
     glBegin(GL_LINES);
-    glVertex3f(-1500+i, 1100, 0);
-    glVertex3f(-1500+i, 1200, 0);
+    glVertex3f(-512+i, -1150, 0);
+    glVertex3f(-512+i, -1250, 0);
     glEnd();
   }
   
   glColor3f(1, 1, 1);                    
 
-  glRasterPos2f(-1500+1024+50, 1125);
-  const unsigned char* t = reinterpret_cast<const unsigned char *>("2000 K");
+  /*
+  glBegin(GL_LINE_LOOP);
+  glVertex3f(-514, -1149, 0);
+  glVertex3f(-514+1028, -1149, 0);
+  glVertex3f(-514+1028, -1251, 0);
+  glVertex3f(-514, -1251, 0);
+  glEnd();
+  */
+  
+  
+  std::string tmax = double_to_string(Tmax,0)+" K";
+  std::string tmin = double_to_string(Tmin,0)+" K";
+  std::string age = double_to_string(grid.get_time()/1000.0,2)+" Gyr";
+  
+  
+  glRasterPos2f(512+50, -1225);
+  const unsigned char* t = reinterpret_cast<const unsigned char *>(tmax.c_str());
   glutBitmapString(GLUT_BITMAP_HELVETICA_18, t);
   
-  glRasterPos2f(-1500-150, 1125);
-  t = reinterpret_cast<const unsigned char *>("0 K");
+  glRasterPos2f(-512-175, -1225);
+  t = reinterpret_cast<const unsigned char *>(tmin.c_str());
   glutBitmapString(GLUT_BITMAP_HELVETICA_18, t);
 
+  glRasterPos2f(-100, 1225);
+  t = reinterpret_cast<const unsigned char *>(age.c_str());
+  glutBitmapString(GLUT_BITMAP_HELVETICA_18, t);
+ 
 
-
-  glPopMatrix ();
-  //glutSwapBuffers();
+  
+  glPopMatrix();
   glFlush();
 
-
+  
+  
   //planet
    
   //glMatrixMode(GL_MODELVIEW);
@@ -309,7 +360,7 @@ void draw_planet (void) {
     if(plot) {
 
       //top face - External
-      
+	
       //bottom left corner
       GLdouble tx1=r1*cosp0*sint0;
       GLdouble ty1=r1*sinp0*sint0;
@@ -356,11 +407,11 @@ void draw_planet (void) {
       glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
       
       GLdouble red, green, blue;
-      temp_to_color2(T, red, green, blue);
+      temp_to_color(T, red, green, blue);
       glColor3f(red, green, blue);                    
       
       //top face (counter-clockwise)
-      //glColor3f(1, 0, 0);                    
+      //glColor3f(1, 0, 0);
       glBegin(GL_POLYGON);
       glVertex3f(tx1, ty1, tz1);	
       glVertex3f(tx2, ty2, tz2);
@@ -368,7 +419,7 @@ void draw_planet (void) {
       glVertex3f(tx4, ty4, tz4);
       //glNormal3f((tx4-bx4)/dr, (ty4-by4)/dr, (tz4-bz4)/dr);
       glEnd();
-      
+
       //bottom face
       //glColor3f(0, 1, 0);                    
       glBegin(GL_POLYGON);
@@ -417,8 +468,8 @@ void draw_planet (void) {
       
       //grid
       
-      glColor3f(0.25, 0.25, 0.25);
-      glLineWidth(1.0);
+      glColor3f(0.15, 0.15, 0.15);
+      glLineWidth(1.25);
       glEnable(GL_LINE_SMOOTH);
       glDepthFunc(GL_LEQUAL);
       
@@ -474,14 +525,9 @@ void draw_planet (void) {
     }
   }
   
- 
-
   glPopMatrix ();
   glutSwapBuffers();
   glFlush();
-  
- 
-
 }
 
  
@@ -505,10 +551,10 @@ int main (int argc, char **argv) {
     Tmin=grid.get_Tmin();
     Tmax=grid.get_Tmax();
     cout<<"Grid Tmin="<<Tmin<<" Tmax="<<Tmax<<endl;
-    
-    Tmin=0;
-    Tmax=2000;
 
+    Tmin=0;
+    Tmax=1500;
+    
     cout<<"Using Tmin="<<Tmin<<" Tmax="<<Tmax<<endl;
   }
 
@@ -516,7 +562,7 @@ int main (int argc, char **argv) {
   glutInit(&argc, argv);
   glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE);
   
-  glutInitWindowSize(1024, 720);
+  glutInitWindowSize(720, 720);
   glutInitWindowPosition(10, 10);
   glutCreateWindow("PLANET CODE");
   

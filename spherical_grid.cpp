@@ -34,6 +34,29 @@ spherical_grid::spherical_grid(const spherical_grid& g) {
   phi_max=g.phi_max;
 
   vnodes=g.vnodes;  
+  
+  albedo=g.albedo;
+  density=g.density;
+  
+  atmosphere_emissivity=g.atmosphere_emissivity;
+  planet_emissivity=g.planet_emissivity;
+
+  Ktherm=g.Ktherm;
+  cp=g.cp;
+  alpha=g.alpha;
+  
+  Lstar=g.Lstar;
+  Dist=g.Dist;
+  
+  Qdecay0=g.Qdecay;
+  Qdecay=g.Qdecay;
+  tdecay=g.tdecay;
+  
+  Teq=g.Teq;
+  Tground=g.Tground;
+  Tatm=g.Tatm;
+
+  age=g.age;
 }
 
 void spherical_grid::set_limits(double r_min, double r_max,
@@ -45,7 +68,6 @@ void spherical_grid::set_limits(double r_min, double r_max,
   phi_max=p_max*M_PI/180.0;
   theta_min=t_min*M_PI/180.0;
   theta_max=t_max*M_PI/180.0;
-  radconst=0;
 }
 
 void spherical_grid::set_time(double t) {
@@ -63,8 +85,42 @@ double spherical_grid::get_time() {
 }
 
 
+
+void spherical_grid::calculate_average_Tground() {
+
+  double sum=0;
+  int n=0;
+  
+  for(int i=0; i<nphi; i++) {
+    for(int j=0; j<ntheta; j++) {
+      	
+      int index=node_index(nr-1,i,j);
+      
+      sum=sum+vnodes[index].T;
+      n=n+1;
+    }
+  }
+
+  Tground=sum/n;
+}
+
+
+double spherical_grid::get_Tatm() {
+  return Tatm;
+}
+
+
+double spherical_grid::get_Tground() {
+  return Tground;
+}
+
+
+
+
+
 void spherical_grid::set_physical_properties(double Ls, double D, double d,
-					     double e, double K, double c,
+					     double planet_e, double atmosphere_e,
+					     double K, double c,
 					     double a, double qd, double qt) {
 
   Lstar=Ls*3.828e26;   //Watt
@@ -75,21 +131,23 @@ void spherical_grid::set_physical_properties(double Ls, double D, double d,
   
   albedo=a;
   density=d; //kg/m^3
-  emissivity=e;
+  planet_emissivity=planet_e;
+  atmosphere_emissivity=atmosphere_e;
+
   Ktherm=K; // Thermal Conductivity W/m/K
   cp=c; // Heat Capacity J/kg/K
  
   alpha=K/(cp*density);   //Diffusivity coefficient m^2/s
   cout<<"alpha= "<<alpha<<" m^2/s"<<" or "<<alpha*1e6<<" mm^2/s"<<endl;
   
-  double sigma=5.670367e-8; // W/m^2/K^4
-  radconst=emissivity*sigma/(cp*density); // m/K^3/s
+  sigma=5.670367e-8; // W/m^2/K^4
 
-  radconst=radconst*1e-3*3.1536e13; // km/K^3/Myr
-
-  Teq=pow((1-albedo)*Lstar/(emissivity*sigma*4*M_PI*pow(Dist,2)),1.0/4.0);
-
+  Teq=pow((1-albedo)*Lstar/(4*sigma*4*M_PI*pow(Dist,2)),1.0/4.0);
+  
   cout<<"Teq="<<Teq<<" K"<<endl;
+
+
+  Tatm=pow(2-atmosphere_emissivity,-1.0/4.0)*Teq;
 
   tdecay=qt*1000;  //Myr;
   Qdecay0=qd*1e-6*3.1536e13/(cp*density);   // K/Myr
@@ -133,22 +191,26 @@ void spherical_grid::calculate_radial_derivatives(int k, int i, int j) {
   }
   
   else if (k==(nr-1)){
-
-    /*
-    //illuminated face is constantly at Teq
-    if(vnodes[index].phi<0.5*M_PI || vnodes[index].phi>1.5*M_PI ) {
-      
-      Tcenter=Teq*pow(fabs(sin(vnodes[index].theta)*cos(vnodes[index].phi)),1.0/4.0);
-      vnodes[index].d2Tdr2=0;
-      return;
-    }
-    */
     
     index_before=node_index(k-1,i,j);
     
     Tbefore=vnodes[index_before].T;
+    
+    if(vnodes[index].phi<0.5*M_PI || vnodes[index].phi>1.5*M_PI ) {
 
-    Tafter=Tbefore;
+       Tafter=Tbefore+2*dr*1e3*(sigma/Ktherm)*
+	 (4*fabs(sin(vnodes[index].theta)*cos(vnodes[index].phi))*pow(Teq,4.0)
+	  +atmosphere_emissivity*pow(Tatm,4)-planet_emissivity*pow(Tcenter,4.0));
+       
+       
+    } else {
+
+      
+      Tafter=Tbefore+2*dr*1e3*(sigma/Ktherm)
+	*(atmosphere_emissivity*pow(Tatm,4)-planet_emissivity*pow(Tcenter,4.0));
+
+    }
+
   }
 
   else {
@@ -275,28 +337,7 @@ void spherical_grid::initialize(double T0) {
 	n.phi=phi_min+i*dphi+0.5*dphi;
 	n.theta=theta_min+j*dtheta+0.5*dtheta;
 	
-	//n.T=T0+100*(radius_max-n.r)/(radius_max-radius_min);
-		
-	//n.T=T0+100*sin(n.theta);
-
-	//n.T=T0+100*sin(n.phi);
-	
-	//n.T=T0+150*sin(n.theta)*fabs(cos(0.5*n.phi))+50*(radius_max-n.r)/(radius_max-radius_min);
-
-	n.T=T0;
-   
-	if (k==(nr-1)){
-	  
-	  if(n.phi<0.5*M_PI || n.phi>1.5*M_PI ) {
-	    
-	    n.T=Teq*pow(fabs(sin(n.theta)*cos(n.phi)),1.0/4.0);
-	    
-	  }
-
-	  if(n.T<T0) n.T=T0;
-	}
-	
-	
+	n.T=T0;	
 	n.Told=n.T;
 	
 	int index= node_index(k,i,j); //Node position in the vector
@@ -382,40 +423,15 @@ double spherical_grid::get_dtheta() {
   return dtheta;
 }
 
-void spherical_grid::update_radiative_cooling(double dt) {
-
-  int k=nr-1;
-  
-  for(int i=0; i<nphi; i++) {
-    for(int j=0; j<ntheta; j++) {
-
-      int index= node_index(k,i,j);
-      
-      if(vnodes[index].phi<0.5*M_PI || vnodes[index].phi>1.5*M_PI ) {
-
-	//illuminated face is constantly at Teq	
-	vnodes[index].T=Teq*pow(fabs(sin(vnodes[index].theta)*cos(vnodes[index].phi)),1.0/4.0);
-    
-      } else {
-	
-	//dark side
-
-	//cerr<<vnodes[index].T<<" t*="<<(7.0/3.0)*dr/(radconst*pow(vnodes[index].T,3))<<" Myr"<<endl;
-	vnodes[index].T=pow(pow(vnodes[index].T,-1.0/3.0)+3*radconst*dt/dr, -1.0/3.0);
-	//cerr<<vnodes[index].T<<endl;
-
-	//int pippo; cin>>pippo;
-	
-      }
-       
-    } 
-  }
-}
-
 void spherical_grid::update_temperature_Euler_adaptive(double& dt) {
 
-  update_radiative_cooling(dt);
 
+  //calculate average temperature
+  //calculate_average_Tground();
+
+  //update averate atmosphere temperature
+  //Tatm=Tground/pow(2,1.0/4.0);
+  
   double dTdt_max=0.0;
   
   for(int k=0; k<nr; k++) {
@@ -430,7 +446,7 @@ void spherical_grid::update_temperature_Euler_adaptive(double& dt) {
 	if(fabs(vnodes[index].dTdt) > dTdt_max) {
 	 dTdt_max=fabs(vnodes[index].dTdt);
 	 dt=0.1*vnodes[index].T/dTdt_max;
-       	}
+	}
 	
       }
     }
@@ -465,200 +481,36 @@ void spherical_grid::update_temperature_Euler_adaptive(double& dt) {
     
     vnodes[index].T=vnodes[index].Tnew;
   }
+
+
+
+  //upate Tatm
+  calculate_average_Tground();
+  Tatm=Tground*pow(planet_emissivity/2.0,1.0/4.0);
   
+
+  //cerr<<"Tground="<<Tground<<" Tatm="<<Tatm<<endl;
+  //int pippo; cin>>pippo;
 }
 
 
 
-void spherical_grid::update_temperature_midpoint_adaptive(double& dt) {
 
-  update_radiative_cooling(dt);
-
-  //save starting temperatures
-  for(auto l=0; l<vnodes.size(); l++) {
-    vnodes[l].Told=vnodes[l].T;
-  }
-  
-  double dTdt_max=0.0;
-  
-  for(int k=0; k<nr; k++) {
-    for(int i=0; i<nphi; i++) {
-      for(int j=0; j<ntheta; j++) {
-	
-	int index=node_index(k,i,j);
-	
-	//Calculate the time derivative of the temperature 
-	vnodes[index].dTdt=calculate_time_derivative(k, i, j, index);
-	
-	if(fabs(vnodes[index].dTdt) > dTdt_max) {
-	  dTdt_max=fabs(vnodes[index].dTdt);
-	  dt=0.1*vnodes[index].T/dTdt_max;
-       	}
-	
-	
-      }
-    }
-  }
-
-  //if(dt>0.01 || dt<=0) dt=0.01;
-
-  //update all temperature values using Euler forumla to calculate temperature at t+0.5*dt
-  for(auto index=0; index<vnodes.size(); index++) {
-    vnodes[index].T=vnodes[index].Told+vnodes[index].dTdt*0.5*dt;
-  }
-
-  for(int k=0; k<nr; k++) {
-    for(int i=0; i<nphi; i++) {
-      for(int j=0; j<ntheta; j++) {
-	
-	int index=node_index(k,i,j);
-	
-	//Calculate the time derivative of the temperature at midpoint
-	vnodes[index].dTdt=calculate_time_derivative(k, i, j, index);	
-	
-      }
-    }
-  }
-
-
-  //update all temperature values
-  for(auto index=0; index<vnodes.size(); index++) {
-    vnodes[index].Tnew= vnodes[index].Told+vnodes[index].dTdt*dt;
-  }
-  
-}
-
-
-
-void spherical_grid::update_temperature_Euler(double dt) {
-  update_radiative_cooling(dt);
-
-  for(int k=0; k<nr; k++) {
-    for(int i=0; i<nphi; i++) {
-      for(int j=0; j<ntheta; j++) {
-
-	int index=node_index(k,i,j);
-
-	//Calculate the time derivative of the temperature 
-	double dTdt=calculate_time_derivative(k, i, j, index);
-	
-	//Euler forumla to calculate temperature at t+dt
-	vnodes[index].Tnew=vnodes[index].T+dTdt*dt;
-
-	if(vnodes[index].Tnew<0) {
-
-	  cerr<<"------------------------------------------"<<endl;
-	  cerr<<"*** PROBLEM T<0 @ NODE INDEX: "<<index<<endl;
-	  cerr<<"Tnew: "<<vnodes[index].Tnew<<" dTdt="<<dTdt<<" T:"<<vnodes[index].T<<endl;
-
-	  cerr<<"index: "<<index<<" r="<<vnodes[index].r<<" phi="<<vnodes[index].phi<<
-	    " theta="<<vnodes[index].theta<<endl;
-	  cerr<<"d2Tdr2="<<vnodes[index].d2Tdr2<<" "
-	      <<" d2Tdphi2="<<vnodes[index].d2Tdphi2<<" "
-	      <<" d2Tdtheta2="<<vnodes[index].d2Tdtheta2<<" "
-	      <<endl;
-	  cerr<<"------------------------------------------"<<endl;
-
-	  int pippo; cin>>pippo;
-	  
-	  vnodes[index].Tnew=0;
-	}
-	
-	
-      }
-    }
-  }
-
-  //update all temperature values
-  for(auto l=0; l<vnodes.size(); l++) {
-    vnodes[l].T=vnodes[l].Tnew;
-  }
-}
-
-
-void spherical_grid::update_temperature_midpoint( double dt) {
-  update_radiative_cooling(dt);
-
-  //save starting temperatures
-  for(auto l=0; l<vnodes.size(); l++) {
-    vnodes[l].Told=vnodes[l].T;
-  }
-
-  for(int k=0; k<nr; k++) {
-    for(int i=0; i<nphi; i++) {
-      for(int j=0; j<ntheta; j++) {
-
-	int index=node_index(k,i,j);
-
-	//Calculate the time derivative of the temperature 
-	double dTdt=calculate_time_derivative(k, i, j, index);
-	
-	//Euler forumla to calculate midpoint temperature at half dt
-	vnodes[index].Tnew=vnodes[index].Told+dTdt*(dt/2);
-      }
-    }
-  }
-  
-  //update all temperature with midpoint values
-  for(auto l=0; l<vnodes.size(); l++) {
-    vnodes[l].T=vnodes[l].Tnew;
-  }
-  
-  for(int k=0; k<nr; k++) {
-    for(int i=0; i<nphi; i++) {
-      for(int j=0; j<ntheta; j++) {
-
-	int index=node_index(k,i,j);
-
-	//Temperature derivative at mid point
-	double dTdt_midpoint=calculate_time_derivative(k, i, j, index);
-	
-	//Euler formula to predict Temperature at the next time step using midpoint temperature derivative
-	vnodes[index].Tnew= vnodes[index].Told+dTdt_midpoint*dt;
-
-
-
-	if(vnodes[index].Tnew<0) {
-
-	  
-	  cerr<<"------------------------------------------"<<endl;
-	  cerr<<"*** PROBLEM T<0 @ NODE INDEX: "<<index<<endl;
-	  cerr<<"Tnew: "<<vnodes[index].Tnew<<" dTdt_midpoint="<<dTdt_midpoint<<" T:"<<vnodes[index].T<<endl;
-	  
-	  cerr<<"index: "<<index<<" r="<<vnodes[index].r<<" phi="<<vnodes[index].phi<<
-	    " theta="<<vnodes[index].theta<<endl;
-	  cerr<<"d2Tdr2="<<vnodes[index].d2Tdr2<<" "
-	      <<" d2Tdphi2="<<vnodes[index].d2Tdphi2<<" "
-	      <<" d2Tdtheta2="<<vnodes[index].d2Tdtheta2<<" "
-	      <<endl;
-	  cerr<<"------------------------------------------"<<endl;
-
-	  int pippo; cin>>pippo;
-
-	}
-
-	
-      }
-    }
-  }
-
-  //update all temperature values
-  for(auto l=0; l<vnodes.size(); l++) {
-    vnodes[l].T=vnodes[l].Tnew;
-  }
-  
-}
 
 void spherical_grid::save(string outfile) {
   
   ofstream fout(outfile);
- 
+  
+  fout<<age<<endl;
+  fout<<Tatm<<endl;
+  fout<<Tground<<endl;
+  fout<<Teq<<endl;
+
   fout<<get_dr()<<" "<<get_dphi()<<" "<<get_dtheta()<<endl;
 
-  fout<<radius_min<<" "<<radius_max<<" "<<phi_min<<" "<<phi_max<<" "<<theta_min<<" "<<theta_max<<" "<<radconst<<endl;
+  fout<<radius_min<<" "<<radius_max<<" "<<phi_min<<" "<<phi_max<<" "<<theta_min<<" "<<theta_max<<endl;
 
-  fout<<density<<" "<<emissivity<<" "<<Ktherm<<" "<<cp<<" "<<alpha<<endl;
-  
+  fout<<density<<" "<<planet_emissivity<<" "<<atmosphere_emissivity<<" "<<Ktherm<<" "<<cp<<" "<<alpha<<endl;
   
   for(int j=0; j<ntheta; j++) {
     for(int i=0; i<nphi; i++) {
@@ -689,14 +541,20 @@ void spherical_grid::load(string infile) {
   
   ifstream fin(infile);
 
+  calculate_average_Tground();
 
+  
+  fin>>age;
+  fin>>Tatm;
+  fin>>Tground;
+  fin>>Teq;
   fin>>dr>>dphi>>dtheta;
-  fin>>radius_min>>radius_max>>phi_min>>phi_max>>theta_min>>theta_max>>radconst;
-  fin>>density>>emissivity>>Ktherm>>cp>>alpha;
+  fin>>radius_min>>radius_max>>phi_min>>phi_max>>theta_min>>theta_max;
+  fin>>density>>planet_emissivity>>atmosphere_emissivity>>Ktherm>>cp>>alpha;
 
   cerr<<dr<<" "<<dphi<<" "<<dtheta<<endl;
   
-  cerr<<radius_min<<" "<<radius_max<<" "<<phi_min<<" "<<phi_max<<" "<<theta_min<<" "<<theta_max<<" "<<radconst<<endl;
+  cerr<<radius_min<<" "<<radius_max<<" "<<phi_min<<" "<<phi_max<<" "<<theta_min<<" "<<theta_max<<endl;
 
   int i;
   double r, phi, theta, T;

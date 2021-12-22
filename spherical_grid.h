@@ -32,17 +32,17 @@ class spherical_grid {
   double phi_min;
   double phi_max;
 
-  double radconst;
+  double sigma;
 
-  double radconst2;
-
-  double albedo, density, emissivity, Ktherm, cp, alpha;
+  double albedo, density, planet_emissivity, atmosphere_emissivity, Ktherm, cp, alpha;
 
   double Lstar, Dist;
 
   double Qdecay0, Qdecay, tdecay;
   
   double Teq;
+  double Tatm;      //average atmosphere temperature
+  double Tground;   //average ground temp
 
   double age;
   
@@ -54,7 +54,11 @@ class spherical_grid {
    spherical_grid(const spherical_grid& g); //copy constructor
 
   void set_limits(double r_min, double r_max, double p_min, double p_max, double t_min, double t_max);
-  void set_physical_properties(double Lstar, double Dist, double density, double emissivity, double Ktherm, double cp, double albedo, double Qdecay, double tdecay);
+  void set_physical_properties(double Lstar, double Dist, double density,
+			       double planet_emissivity,
+			       double atmosphere_emissivity,
+			       double Ktherm, double cp,
+			       double albedo, double Qdecay, double tdecay);
 
   vector<spherical_node> vnodes;
 
@@ -69,15 +73,13 @@ class spherical_grid {
   void calculate_longitudinal_derivatives(int k, int i, int j);
   void calculate_latitudinal_derivatives(int k, int i, int j);
 
+  void calculate_average_Tground();
+  
   int node_index (int k, int i, int j);
 
   void update_temperature_Euler_adaptive(double& dt);
-  void update_temperature_midpoint_adaptive(double& dt);
-  void update_temperature_Euler(double dt);
-  void update_temperature_midpoint(double dt);
 
-  void update_radiative_cooling(double dt);
-
+  
   void set_time(double);
   double get_time();
   
@@ -89,6 +91,9 @@ class spherical_grid {
   double get_dtheta();
 
   double get_radius();
+
+  double get_Tground();
+  double get_Tatm();
   
   void save(string outfile);
   void load(string infile);

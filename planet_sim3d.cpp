@@ -18,18 +18,20 @@ using namespace planet_code;
 int main (){
 
   //Crust Nature Paper
-  const double density=2700;  //kg/m^3
-  const double K=2.5; // Thermal Conductivity W/m/K
+  //const double density=2700;  //kg/m^3
+  //const double K=2.5; // Thermal Conductivity W/m/K
+
+  const double density=5558;  //kg/m^3
+  const double K=5; // Thermal Conductivity W/m/K
+
   const double cp=200; // Heat Capacity J/kg/K
 
-  const double emissivity=0.9;
-
-  const double Lstar=0.0017;   //solar luminosity 
+  const double planet_emissivity=0.9;
+  const double atmosphere_emissivity=0.9;
+  
+  const double Lstar=0.00154;   //solar luminosity 
   const double Dist=0.0485;       //planet distance Astronomical Units
   const double albedo=0.3;  //planet albedo
-
-  //const double Qdecay=0.001;  //micro-W/m^3 
-  //const double tdecay=0.1;     //Gyr
 
   const double Qdecay=0.01;  //micro-W/m^3 
   const double tdecay=1;     //Gyr
@@ -39,8 +41,8 @@ int main (){
   spherical_grid grid;
   
   //Avoid north and south pole and the center
-  grid.set_limits(0, 6000 , 0, 360, 0, 180);
-  grid.set_physical_properties(Lstar, Dist, density, emissivity, K, cp, albedo, Qdecay, tdecay);
+  grid.set_limits(0, 6880 , 0, 360, 0, 180);
+  grid.set_physical_properties(Lstar, Dist, density, planet_emissivity, atmosphere_emissivity, K, cp, albedo, Qdecay, tdecay);
 
   //Number of Nodes
   int nr=16;
@@ -54,7 +56,7 @@ int main (){
   
   //TIME GRID
   
-  double dt=0.01; //time step [Myr]
+  double dt=0.1; //time step [Myr]
   double tsim; //simulation time [Gyr] 10^9 years
   
   cout<<"Enter simulation time [Gyr]: ";
@@ -66,7 +68,7 @@ int main (){
   cout<<"number of time steps: "<<nt<<endl;
   double t=0;
 
-  int tsave=500;
+  int tsave=100;
   double tt=tsave;
   
   //time loop
@@ -81,7 +83,6 @@ int main (){
 
     //midpoint
     //grid.update_temperature_midpoint_adaptive(dt);
-
     
     if(t==0 || t>=tt) {
       grid.save("grid_t"+to_string(int(t))+".data");
@@ -92,12 +93,11 @@ int main (){
     
     t=t+dt;
   }
-
+  
   cerr<<endl;
   
-  //print results 
-  grid.save("grid_t"+to_string(tsim)+".data");
-  
+  grid.save("grid_t"+to_string(int(t))+".data");
+
   
   return 0;
 
