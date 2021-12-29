@@ -4,15 +4,13 @@
 //  g++ -w -o planet_graphics.exe planet_graphics.cpp spherical_grid.cpp  spherical_node.cpp -L/System/Library/Frameworks -framework GLUT -framework OpenGL
 
 
-#ifdef __APPLE_CC__
+#ifdef __APPLE_CC__ 
 #include <GLUT/glut.h>
 #include <OpenGL/gl.h>
 #else
 #include <GL/glut.h>
-#endif
-
-
 #include <GL/freeglut.h>
+#endif
 
 #include<cmath>
 #include<iostream>
@@ -27,54 +25,51 @@
 using namespace std;
 using namespace planet_code;
 
-double user_phi=0;
-double user_theta=0;
 
-double user_height=-6000;
-double user_xcenter=0;
-double user_ycenter=0;
+//View height and position 
+GLdouble user_height=-6000;
+GLdouble user_xcenter=0;
+GLdouble user_ycenter=0;
 
-float xRotated = -45.0, yRotated = 0.0, zRotated = 240.0;
+//Planet rotation angles
+GLdouble xRotated = -45.0, yRotated = 0.0, zRotated = 240.0;
 
 bool user_rotate=false;
 
 spherical_grid grid;
+GLdouble Tmin, Tmax;
 
-double Tmin, Tmax;
-
+//Reset graphic after window resize
 void reshape (int w, int h) {
-  
-    glMatrixMode (GL_PROJECTION);
+ 
+    glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-
-    //https://stackoverflow.com/questions/16571981/gluperspective-parameters-what-do-they-mean
-    
-    gluPerspective (25.0, (GLdouble)w / (GLdouble)h, 0.5, 12000);
-    glMatrixMode   (GL_MODELVIEW);
-    glViewport     (0, 0, w, h);
+    gluPerspective(25.0, (GLdouble)w / (GLdouble)h, 0.5, 12000);
+    glMatrixMode(GL_MODELVIEW);
+    glViewport(0, 0, w, h);
 }
 
+//Process key events
 void process_key(unsigned char key, int x, int y) {
 
   if (key == '+') user_height  += 50;  
   if (key == '-') user_height  -= 50;
-
   if (key == 'r') {
-
     if(user_rotate){
       user_rotate=false;
     } else {
       user_rotate=true;
     }
   }
-  
   glutPostRedisplay();
 }
 
+//Process special key events
 void special_key(int k, int x, int y) {
 
   switch(k) {
-
+    
+    //Rotate planet
   case GLUT_KEY_F1:  xRotated += 1; break;
   case GLUT_KEY_F2:  xRotated -= 1; break;
   case GLUT_KEY_F3:  yRotated -= 1; break;
@@ -82,6 +77,7 @@ void special_key(int k, int x, int y) {
   case GLUT_KEY_F5:  zRotated -= 1; break;
   case GLUT_KEY_F6:  zRotated += 1; break;
 
+    //Move view point
   case GLUT_KEY_UP:  user_ycenter  += 10; break;
   case GLUT_KEY_DOWN:  user_ycenter  -= 10; break;
   case GLUT_KEY_LEFT:  user_xcenter  += 10; break;
@@ -93,14 +89,14 @@ void special_key(int k, int x, int y) {
 }
 
 
+//Color map
+void temp_to_color(GLdouble temp, GLdouble& r, GLdouble& g, GLdouble& b) {
 
-void temp_to_color(double temp, GLdouble& r, GLdouble& g, GLdouble& b) {
-
-
-  double t1=0;
-  double t2=150;
+  //Temperature range in Kelvin
+  GLdouble t1=0;
+  GLdouble t2=150;
   
-  if(temp>=t1 && temp<t2) {       // dark gray to white
+  if(temp>=t1 && temp<t2) {       //dark gray
 
     r=0.2;
     g=0.2;
@@ -113,7 +109,7 @@ void temp_to_color(double temp, GLdouble& r, GLdouble& g, GLdouble& b) {
   t1=150;
   t2=273;
   
-  if(temp>=t1 && temp<t2) {       // dark gray to white
+  if(temp>=t1 && temp<t2) {       //dark gray to white
 
     r=0.2+0.8*(temp-t1)/(t2-t1);
     g=0.2+0.8*(temp-t1)/(t2-t1);
@@ -125,7 +121,7 @@ void temp_to_color(double temp, GLdouble& r, GLdouble& g, GLdouble& b) {
   t1=273;
   t2=293;
   
-  if(temp>=t1 && temp<t2) {     //cyan
+  if(temp>=t1 && temp<t2) {     //white to cyan
     r=1-(temp-t1)/(t2-t1);
     g=1;
     b=1;
@@ -136,7 +132,7 @@ void temp_to_color(double temp, GLdouble& r, GLdouble& g, GLdouble& b) {
   t1=293;
   t2=313;
   
-  if(temp>=t1 && temp<t2) {     //blue
+  if(temp>=t1 && temp<t2) {     //cyan to blue
     r=0;
     g=1-(temp-t1)/(t2-t1);
     b=1;
@@ -147,7 +143,7 @@ void temp_to_color(double temp, GLdouble& r, GLdouble& g, GLdouble& b) {
   t1=313;
   t2=333;
   
-  if(temp>=t1 && temp<t2) {     //brown
+  if(temp>=t1 && temp<t2) {     //blue to brown
     r=0.5*(temp-t1)/(t2-t1);
     g=0.35*(temp-t1)/(t2-t1);
     b=1-(temp-t1)/(t2-t1);
@@ -207,6 +203,7 @@ void temp_to_color(double temp, GLdouble& r, GLdouble& g, GLdouble& b) {
   return;  
 }
 
+//Convert double to string using precision decimals
 string double_to_string(double d, int precision) {
   std::stringstream ss;
   ss << std::fixed << std::setprecision(precision) <<d;
@@ -216,7 +213,6 @@ string double_to_string(double d, int precision) {
 
 void draw_planet (void) {
 
-  //colormap
   glMatrixMode(GL_MODELVIEW);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glLoadIdentity();
@@ -227,16 +223,17 @@ void draw_planet (void) {
   glPushMatrix();
 
   //atmosphere
-  int circle_points = 100;
-  float angle = 2.0f * 3.1416f / circle_points;
+  int circle_points=100; //number of slices
+  float angle=2.0f * 3.1416f / circle_points; //angle of each slice
 
+  //Get atmosphere color based on its temperature
   GLdouble red, green, blue;
   temp_to_color(grid.get_Tatm(), red, green, blue);
 
   for(int radius=1100; radius>=1000; radius--) {
 
+    //Fade to black
     double c=0.75*(1100-radius)/100.0;
-    
     glColor3f(red*c, green*c, blue*c);
     
     glBegin(GL_POLYGON);
@@ -254,8 +251,8 @@ void draw_planet (void) {
   glFlush();
 
   
-
-  for(auto i=0; i<1024; i++) {
+  //Color bar
+  for(int i=0; i<1024; i++) {
 
     double T=Tmin+i*(Tmax-Tmin)/1023.0;
     
@@ -269,24 +266,15 @@ void draw_planet (void) {
   }
   
   glColor3f(1, 1, 1);                    
-
-  /*
-  glBegin(GL_LINE_LOOP);
-  glVertex3f(-514, -1149, 0);
-  glVertex3f(-514+1028, -1149, 0);
-  glVertex3f(-514+1028, -1251, 0);
-  glVertex3f(-514, -1251, 0);
-  glEnd();
-  */
-  
-  
+ 
+  /*//Write maximum and minimum temperature and simulation time
   std::string tmax = double_to_string(Tmax,0)+" K";
   std::string tmin = double_to_string(Tmin,0)+" K";
   std::string age = double_to_string(grid.get_time()/1000.0,2)+" Gyr";
   
   
   glRasterPos2f(512+50, -1225);
-  const unsigned char* t = reinterpret_cast<const unsigned char *>(tmax.c_str());
+  const unsigned char*t = reinterpret_cast<const unsigned char *>(tmax.c_str());
   glutBitmapString(GLUT_BITMAP_HELVETICA_18, t);
   
   glRasterPos2f(-512-175, -1225);
@@ -297,37 +285,34 @@ void draw_planet (void) {
   t = reinterpret_cast<const unsigned char *>(age.c_str());
   glutBitmapString(GLUT_BITMAP_HELVETICA_18, t);
  
-
+  */
   
   glPopMatrix();
   glFlush();
 
   
   
-  //planet
-   
-  //glMatrixMode(GL_MODELVIEW);
-  //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  //Planet
   glLoadIdentity();
-
-  //glEnable(GL_DEPTH_TEST);
-
   glTranslatef(user_xcenter, user_ycenter, user_height); 
   glPushMatrix();
-
-
+  
+  //Rotate planet
   glRotatef(xRotated, 1, 0, 0);
   glRotatef(yRotated, 0, 1, 0);
   glRotatef(zRotated, 0, 0, 1);
 
   glEnable(GL_DEPTH_TEST);
 
+  //Half cell size
   double hdr=0.5*grid.get_dr();
   double hdphi=0.5*grid.get_dphi();
   double hdtheta=0.5*grid.get_dtheta();
 
+  //Planet radius is always converted to 1000
   double rfac=1000.0/grid.get_radius();
-  
+
+  //loop all over the nodes
   for(int k=0; k<grid.vnodes.size() ; k++){
   
     GLdouble r0=(grid.vnodes[k].r-hdr)*rfac;
@@ -354,7 +339,7 @@ void draw_planet (void) {
     GLdouble T=grid.vnodes[k].T;
 
     bool plot=true;
-    if(grid.vnodes[k].phi>0 && grid.vnodes[k].phi<=M_PI/2 && grid.vnodes[k].theta < 0.5*M_PI) plot=false;
+    if(grid.vnodes[k].phi>0 && grid.vnodes[k].phi<=M_PI/2 && grid.vnodes[k].theta < 0.5*M_PI) plot=false; //Do not plot this sector
     
     
     if(plot) {
@@ -381,7 +366,7 @@ void draw_planet (void) {
       GLdouble ty4=r1*sinp0*sint1;
       GLdouble tz4=r1*cos(theta1);
       
-      //bottom face - Internal
+      //bottom face - Internal 
       //blc
       GLdouble bx1=r0*cosp0*sint0;
       GLdouble by1=r0*sinp0*sint0;
@@ -401,9 +386,9 @@ void draw_planet (void) {
       GLdouble bx4=r0*cosp0*sint1;
       GLdouble by4=r0*sinp0*sint1;
       GLdouble bz4=r0*cos(theta1);
-      
+
+      //Filled cells
       glDepthFunc(GL_LEQUAL);
-      
       glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
       
       GLdouble red, green, blue;
@@ -417,7 +402,6 @@ void draw_planet (void) {
       glVertex3f(tx2, ty2, tz2);
       glVertex3f(tx3, ty3, tz3);
       glVertex3f(tx4, ty4, tz4);
-      //glNormal3f((tx4-bx4)/dr, (ty4-by4)/dr, (tz4-bz4)/dr);
       glEnd();
 
       //bottom face
@@ -466,11 +450,10 @@ void draw_planet (void) {
       glEnd();
       
       
-      //grid
-      
-      glColor3f(0.15, 0.15, 0.15);
-      glLineWidth(1.25);
-      glEnable(GL_LINE_SMOOTH);
+      //draw wireframe
+      glColor3f(0.15, 0.15, 0.15); //grey
+      glLineWidth(0.1);
+      // glEnable(GL_LINE_SMOOTH);
       glDepthFunc(GL_LEQUAL);
       
       
@@ -531,7 +514,7 @@ void draw_planet (void) {
 }
 
  
- 
+//Rotate planet continously
 void idleFunc (void) {
 
   if(user_rotate) {
@@ -541,6 +524,7 @@ void idleFunc (void) {
 
   glFlush ();
 }
+
 
 
 int main (int argc, char **argv) {
@@ -556,6 +540,11 @@ int main (int argc, char **argv) {
     Tmax=1500;
     
     cout<<"Using Tmin="<<Tmin<<" Tmax="<<Tmax<<endl;
+  }
+
+  else {
+    cout<<"Please run using: ./planet_graphics grid_file_name"<<endl;
+    exit(EXIT_FAILURE);
   }
 
   
