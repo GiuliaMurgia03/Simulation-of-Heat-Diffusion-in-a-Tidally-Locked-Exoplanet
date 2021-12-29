@@ -15,24 +15,24 @@ class spherical_grid {
 
  private:
 
-  int nr; // number of radial nodes 
+  int nr; // Number of radial nodes 
   int nphi; //number of longitude nodes
   int ntheta; //number of latitude nodes
 
-  double dr; //radial resolution
+  double dr; //radial resolution 
   double dphi; //longitude resolution
   double dtheta; //latitude resolution
 
   double radius_min; //km
   double radius_max; //km
 
-  double theta_min;
-  double theta_max;
+  double theta_min; //Rad
+  double theta_max; //Rad
 
-  double phi_min;
-  double phi_max;
+  double phi_min; //Rad
+  double phi_max; //Rad
 
-  double sigma;
+  double sigma; //Stefan-Boltzmann Constant
 
   double albedo, density, planet_emissivity, atmosphere_emissivity, Ktherm, cp, alpha;
 
@@ -41,17 +41,17 @@ class spherical_grid {
   double Qdecay0, Qdecay, tdecay;
   
   double Teq;
-  double Tatm;      //average atmosphere temperature
-  double Tground;   //average ground temp
+  double Tatm;      //Average atmosphere temperature
+  double Tground;   //Average ground temp
 
-  double age;
+  double age; //Simulation time Myr
   
  public:
   
   spherical_grid();
   ~spherical_grid();
 
-   spherical_grid(const spherical_grid& g); //copy constructor
+   spherical_grid(const spherical_grid& g); //Copy constructor
 
   void set_limits(double r_min, double r_max, double p_min, double p_max, double t_min, double t_max);
   void set_physical_properties(double Lstar, double Dist, double density,
@@ -65,8 +65,6 @@ class spherical_grid {
   void initialize(double T0); //Initialize nodes coordinates and set a uniform temoerature T0
 
   void set_nodes_number (int n_r, int n_phi, int n_theta);
-
-  void calculate_nodes_derivatives();
 
   double calculate_time_derivative(int k, int i, int j, int index);
   void calculate_radial_derivatives(int k, int i, int j);

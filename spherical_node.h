@@ -18,16 +18,15 @@ public:
   
   double T; //Temperature
   double Tnew; //New Temperature value
-  double Told; //This help with midpoint
-  double r; //radius or distance from center 
-  double phi; //longitude
-  double theta; //latitude
+  double r; //Radius or distance from center 
+  double phi; //Longitude
+  double theta; //Latitude
 
-  double dTdt;  //derivative w.r.t. time
+  double dTdt;  //Derivative w.r.t. time
   
-  double d2Tdr2; //second derivative w.r.t. radius
-  double d2Tdphi2; //second derivative w.r.t. longitude
-  double d2Tdtheta2; //second derivative w.r.t latitude
+  double d2Tdr2; //Second derivative w.r.t. radius
+  double d2Tdphi2; //Second derivative w.r.t. longitude
+  double d2Tdtheta2; //Second derivative w.r.t latitude
   
 };
 

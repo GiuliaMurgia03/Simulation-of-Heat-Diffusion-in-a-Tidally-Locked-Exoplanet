@@ -12,7 +12,6 @@ spherical_node::spherical_node(const spherical_node& n) {
   
     T=n.T;
     Tnew=n.Tnew;
-    Told=n.Told;
 
     r=n.r;
     phi=n.phi;

@@ -64,6 +64,7 @@ void spherical_grid::set_limits(double r_min, double r_max,
 				double t_min, double t_max) {
   radius_min=r_min;
   radius_max=r_max;
+  //Deg to Rad
   phi_min=p_min*M_PI/180.0;
   phi_max=p_max*M_PI/180.0;
   theta_min=t_min*M_PI/180.0;
@@ -73,11 +74,7 @@ void spherical_grid::set_limits(double r_min, double r_max,
 void spherical_grid::set_time(double t) {
 
   age=t;
-  
   Qdecay=Qdecay0*exp(-age/tdecay);
-
-
-  //cerr<<t<<" "<<tdecay<<" "<<Qdecay<<" "<<Qdecay0<<endl;
 }
 
 double spherical_grid::get_time() {
@@ -116,8 +113,6 @@ double spherical_grid::get_Tground() {
 
 
 
-
-
 void spherical_grid::set_physical_properties(double Ls, double D, double d,
 					     double planet_e, double atmosphere_e,
 					     double K, double c,
@@ -129,9 +124,9 @@ void spherical_grid::set_physical_properties(double Ls, double D, double d,
   double solar_constant=(1-albedo)*Lstar/(4*M_PI*pow(Dist,2));
   cout<<"solar_constant="<<solar_constant<<" W/m^2"<<endl;
   
-  albedo=a;
+  albedo=a;  
   density=d; //kg/m^3
-  planet_emissivity=planet_e;
+  planet_emissivity=planet_e; 
   atmosphere_emissivity=atmosphere_e;
 
   Ktherm=K; // Thermal Conductivity W/m/K
@@ -149,28 +144,11 @@ void spherical_grid::set_physical_properties(double Ls, double D, double d,
 
   Tatm=pow(2-atmosphere_emissivity,-1.0/4.0)*Teq;
 
-  tdecay=qt*1000;  //Myr;
+  tdecay=qt*1000;  //Gyr to Myr
   Qdecay0=qd*1e-6*3.1536e13/(cp*density);   // K/Myr
 }
 
 
-//Function that calculate the second derivatives of the temperature with the respect to radius, the angle phi and the angle theta
-
-void spherical_grid::calculate_nodes_derivatives() {
-
-  for(int k=0; k<nr; k++) {
-    for(int i=0; i<nphi; i++) {
-      for(int j=0; j<ntheta; j++) {
-  
-	calculate_radial_derivatives(k,i,j);
-	calculate_longitudinal_derivatives(k,i,j);
-	calculate_latitudinal_derivatives(k,i,j);
-
-      }
-    }
-  }
-
-}
 
   
 void spherical_grid::calculate_radial_derivatives(int k, int i, int j) {
@@ -181,40 +159,35 @@ void spherical_grid::calculate_radial_derivatives(int k, int i, int j) {
   int index_after, index_before;
   double Tafter, Tbefore;
   
-  //boundary conditions
+  //Boundary conditions
   
-  if(k==0) {
+  if(k==0) { 
     index_before=node_index(k+1,i,j);//Internal Boundary condition: no heat flux, i.e. the first derivative is equal to 0
     index_after=node_index(k+1,i,j);
     Tbefore=vnodes[index_before].T;
     Tafter=vnodes[index_after].T;
   }
   
-  else if (k==(nr-1)){
+  else if (k==(nr-1)){ //Surface Boundary condition
     
     index_before=node_index(k-1,i,j);
     
     Tbefore=vnodes[index_before].T;
     
-    if(vnodes[index].phi<0.5*M_PI || vnodes[index].phi>1.5*M_PI ) {
+    if(vnodes[index].phi<0.5*M_PI || vnodes[index].phi>1.5*M_PI ) {  //Illuminated Side
 
        Tafter=Tbefore+2*dr*1e3*(sigma/Ktherm)*
 	 (4*fabs(sin(vnodes[index].theta)*cos(vnodes[index].phi))*pow(Teq,4.0)
-	  +atmosphere_emissivity*pow(Tatm,4)-planet_emissivity*pow(Tcenter,4.0));
-       
-       
-    } else {
-
-      
-      Tafter=Tbefore+2*dr*1e3*(sigma/Ktherm)
-	*(atmosphere_emissivity*pow(Tatm,4)-planet_emissivity*pow(Tcenter,4.0));
-
+	  +atmosphere_emissivity*pow(Tatm,4)-planet_emissivity*pow(Tcenter,4.0)); 
     }
 
+    else { //Dark Side
+      Tafter=Tbefore+2*dr*1e3*(sigma/Ktherm)
+	*(atmosphere_emissivity*pow(Tatm,4)-planet_emissivity*pow(Tcenter,4.0));
+    }
   }
 
   else {
-    
     index_before=node_index(k-1,i,j);
     index_after=node_index(k+1,i,j);
     
@@ -223,13 +196,11 @@ void spherical_grid::calculate_radial_derivatives(int k, int i, int j) {
   }
   
   
-  //calculate the second derivative of the temperature with the respect to radius r (d2Tdr2)
+  //Calculate the second derivative of the temperature with the respect to radius r (d2Tdr2)
   double r=vnodes[index].r;
-
   vnodes[index].d2Tdr2=(Tafter-Tbefore)/(r*dr)+(Tbefore+Tafter-2*Tcenter)/(dr*dr);  
 }
  
-
 
 
 void spherical_grid::calculate_longitudinal_derivatives(int k, int i, int j) {
@@ -238,8 +209,8 @@ void spherical_grid::calculate_longitudinal_derivatives(int k, int i, int j) {
 	int index_before;
 	int index_after;
 
-	//periodic boundary conditions
-      
+	//Periodic boundary conditions
+     
 	if(i==0) {
 
 	  index_before=node_index(k,nphi-1,j);
@@ -258,7 +229,7 @@ void spherical_grid::calculate_longitudinal_derivatives(int k, int i, int j) {
 	  index_after=node_index(k,i+1,j);
 	}
 	
-	//calculate the second derivative of the temperature with the respect to the angle phi (d2Tdphi2)
+	//Calculate the second derivative of the temperature with the respect to the angle phi (d2Tdphi2)
 	
 	double Tbefore= vnodes[index_before].T;
 	double Tcenter= vnodes[index].T;
@@ -278,15 +249,15 @@ void spherical_grid::calculate_latitudinal_derivatives(int k, int i, int j) {
 	int index_before;
 	int index_after;
 
-	//boundary conditions
+	//Boundary conditions
       
 	if(j==0) {
-	  index_before=node_index(k,i,j+1); //External Boundary condition: no heat flux, i.e. the first derivative is equal to 0
+	  index_before=node_index(k,i,j+1); //External Boundary condition (North Pole): no heat flux, i.e. the first derivative is equal to 0
 	  index_after=node_index(k,i,j+1);
 	}
 
 	else if (j==(ntheta-1)){
-	  index_before=node_index(k,i,j-1); //External Boundary condition: no heat flux, i.e. the first derivative is equal to 0
+	  index_before=node_index(k,i,j-1); //External Boundary condition (South Pole): no heat flux, i.e. the first derivative is equal to 0
 	  index_after=node_index(k,i,j-1);
 	}
 
@@ -296,7 +267,7 @@ void spherical_grid::calculate_latitudinal_derivatives(int k, int i, int j) {
 	}
 
 	
-	//calculate the second derivative of the temperature with the respect to theta r (d2Tdtheta2)
+	//Calculate the second derivative of the temperature with the respect to theta r (d2Tdtheta2)
 
 	double Tbefore= vnodes[index_before].T;
 	double Tcenter= vnodes[index].T;
@@ -309,9 +280,7 @@ void spherical_grid::calculate_latitudinal_derivatives(int k, int i, int j) {
 
 double spherical_grid::calculate_time_derivative(int k, int i, int j, int index) {
   
-  
   // calculate the second spatial derivatives of the temperature with the respect to radius, the angle phi and the angle theta
-  
   calculate_radial_derivatives(k,i,j);
   calculate_longitudinal_derivatives(k,i,j);
   calculate_latitudinal_derivatives(k,i,j);	  
@@ -319,7 +288,6 @@ double spherical_grid::calculate_time_derivative(int k, int i, int j, int index)
   double dTdt=(alpha*3.1536e7)*(vnodes[index].d2Tdr2+
 				vnodes[index].d2Tdphi2+
 				vnodes[index].d2Tdtheta2)+Qdecay;
-
   return dTdt;
 }
 
@@ -336,9 +304,7 @@ void spherical_grid::initialize(double T0) {
 	n.r=radius_min+k*dr+0.5*dr;
 	n.phi=phi_min+i*dphi+0.5*dphi;
 	n.theta=theta_min+j*dtheta+0.5*dtheta;
-	
 	n.T=T0;	
-	n.Told=n.T;
 	
 	int index= node_index(k,i,j); //Node position in the vector
 	
@@ -346,8 +312,6 @@ void spherical_grid::initialize(double T0) {
       }
     }
   }
-  
-
 }
 
 
@@ -368,18 +332,17 @@ void spherical_grid::set_nodes_number (int n_r, int n_phi, int n_theta) {
   
   cout<<"number of grid nodes: "<<vnodes.size()<<endl;
 
-  //calculate radial resolution
+  //Calculate radial resolution
   dr=(radius_max-radius_min)/nr;
   
   cout<<"radius min="<<radius_min<<" max="<<radius_max<<" dr: "<<dr<<endl;
 
-  //calculate angular longitude resolution
+  //Calculate angular longitude resolution
   dphi=2*M_PI/nphi; //rad
   cout<<"phi min="<<phi_min*180/M_PI<<" max="<<phi_max*180/M_PI<<" dphi: "<<dphi*180/M_PI<<"°"<<endl;
   
-  //calculate angular latitude resolution
+  //Calculate angular latitude resolution
   dtheta=(theta_max-theta_min)/(ntheta); //rad
-  
   
   cout<<"theta min="<<theta_min*180/M_PI<<" max="<<theta_max*180/M_PI<<" dtheta: "<<dtheta*180/M_PI<<"°"<<endl;
   
@@ -424,13 +387,6 @@ double spherical_grid::get_dtheta() {
 }
 
 void spherical_grid::update_temperature_Euler_adaptive(double& dt) {
-
-
-  //calculate average temperature
-  //calculate_average_Tground();
-
-  //update averate atmosphere temperature
-  //Tatm=Tground/pow(2,1.0/4.0);
   
   double dTdt_max=0.0;
   
@@ -452,48 +408,28 @@ void spherical_grid::update_temperature_Euler_adaptive(double& dt) {
     }
   }
   
-  if(dt>0.01) dt=0.01;
+  if(dt>0.01) dt=0.01; //Maximum dt allowed 0.01 Myr
   
-  //update all temperature values
-  for(auto index=0; index<vnodes.size(); index++) {
+  //Update all temperature values
+  for(int index=0; index<vnodes.size(); index++) {
     
     //Euler forumla to calculate temperature at t+dt
     vnodes[index].Tnew=vnodes[index].T+vnodes[index].dTdt*dt;
 
     if(vnodes[index].Tnew<0) {
       
-      cerr<<"------------------------------------------"<<endl;
-      cerr<<"*** PROBLEM T<0 @ NODE INDEX: "<<index<<endl;
-      cerr<<"Tnew: "<<vnodes[index].Tnew<<" dTdt="<<vnodes[index].dTdt<<" T:"<<vnodes[index].T<<endl;
-      
-      cerr<<"index: "<<index<<" r="<<vnodes[index].r<<" phi="<<vnodes[index].phi<<
-	" theta="<<vnodes[index].theta<<endl;
-      cerr<<"d2Tdr2="<<vnodes[index].d2Tdr2<<" "
-	  <<" d2Tdphi2="<<vnodes[index].d2Tdphi2<<" "
-	  <<" d2Tdtheta2="<<vnodes[index].d2Tdtheta2<<" "
-	  <<endl;
-      cerr<<"------------------------------------------"<<endl;
-      
-      int pippo; cin>>pippo;
-      
-      vnodes[index].Tnew=0;
+      cerr<<"The simulation fails due to negative temperature."<<endl;
+      exit(EXIT_FAILURE);
     }
     
     vnodes[index].T=vnodes[index].Tnew;
   }
 
 
-
-  //upate Tatm
+  //Update Tatm
   calculate_average_Tground();
   Tatm=Tground*pow(planet_emissivity/2.0,1.0/4.0);
-  
-
-  //cerr<<"Tground="<<Tground<<" Tatm="<<Tatm<<endl;
-  //int pippo; cin>>pippo;
 }
-
-
 
 
 
@@ -543,7 +479,6 @@ void spherical_grid::load(string infile) {
 
   calculate_average_Tground();
 
-  
   fin>>age;
   fin>>Tatm;
   fin>>Tground;
