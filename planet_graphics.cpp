@@ -9,7 +9,6 @@
 #include <OpenGL/gl.h>
 #else
 #include <GL/glut.h>
-#include <GL/freeglut.h>
 #endif
 
 #include<cmath>
@@ -265,27 +264,35 @@ void draw_planet (void) {
     glEnd();
   }
   
-  glColor3f(1, 1, 1);                    
- 
-  /*//Write maximum and minimum temperature and simulation time
   std::string tmax = double_to_string(Tmax,0)+" K";
   std::string tmin = double_to_string(Tmin,0)+" K";
   std::string age = double_to_string(grid.get_time()/1000.0,2)+" Gyr";
-  
-  
-  glRasterPos2f(512+50, -1225);
-  const unsigned char*t = reinterpret_cast<const unsigned char *>(tmax.c_str());
-  glutBitmapString(GLUT_BITMAP_HELVETICA_18, t);
-  
-  glRasterPos2f(-512-175, -1225);
-  t = reinterpret_cast<const unsigned char *>(tmin.c_str());
-  glutBitmapString(GLUT_BITMAP_HELVETICA_18, t);
 
-  glRasterPos2f(-100, 1225);
+  glColor3f(1, 1, 1);                    
+
+  const unsigned char* t = reinterpret_cast<const unsigned char *>(tmax.c_str());
+
+  glScalef(0.5 , 0.5 , 0.5) ;
+  
+  glTranslatef(1150 , -2450 , 0) ;
+  for(int i=0; i<tmax.size(); i++){
+    glutStrokeCharacter(GLUT_STROKE_ROMAN, t[i]);
+  }
+  
+  t = reinterpret_cast<const unsigned char *>(tmin.c_str());
+  glTranslatef(-3100 , 0 , 0) ;
+  for(int i=0; i<tmin.size(); i++){
+    glutStrokeCharacter(GLUT_STROKE_ROMAN, t[i]);
+  }
+
   t = reinterpret_cast<const unsigned char *>(age.c_str());
-  glutBitmapString(GLUT_BITMAP_HELVETICA_18, t);
- 
-  */
+  glTranslatef(900 , 4900 , 0) ;
+  for(int i=0; i<age.size(); i++){
+    glutStrokeCharacter(GLUT_STROKE_ROMAN, t[i]);
+  }
+
+
+  
   
   glPopMatrix();
   glFlush();
