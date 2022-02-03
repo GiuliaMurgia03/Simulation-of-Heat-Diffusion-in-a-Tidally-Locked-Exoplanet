@@ -1,6 +1,9 @@
+
+// Linux
 // g++ -o planet_graphics.exe planet_graphics.cpp spherical_grid.cpp spherical_node.cpp -lGL -lGLU -lglut
 
 
+// MacOs
 //  g++ -w -o planet_graphics.exe planet_graphics.cpp spherical_grid.cpp  spherical_node.cpp -L/System/Library/Frameworks -framework GLUT -framework OpenGL
 
 
@@ -28,7 +31,7 @@ using namespace planet_code;
 //View height and position 
 GLdouble user_height=-6000;
 GLdouble user_xcenter=0;
-GLdouble user_ycenter=0;
+GLdouble user_ycenter=100;
 
 //Planet rotation angles
 GLdouble xRotated = -45.0, yRotated = 0.0, zRotated = 240.0;
@@ -174,7 +177,7 @@ void temp_to_color(GLdouble temp, GLdouble& r, GLdouble& g, GLdouble& b) {
   }
 
   t1=1000;
-  t2=1250;
+  t2=1300;
   
   if(temp>=t1 && temp<t2) {     //orange to red
     r=1;
@@ -184,8 +187,9 @@ void temp_to_color(GLdouble temp, GLdouble& r, GLdouble& g, GLdouble& b) {
     return;
   }
 
-  t1=1250;
-  t2=1500;
+  
+  t1=1300;
+  t2=1600;
   
   if(temp>=t1 && temp<t2) {     //red to bordeaux
     r=1-0.25*(temp-t1)/(t2-t1);
@@ -194,11 +198,13 @@ void temp_to_color(GLdouble temp, GLdouble& r, GLdouble& g, GLdouble& b) {
     
     return;
   }
-  
+ 
+
   r=0.75;
   g=0.0;
   b=0.1;
-    
+  
+  
   return;  
 }
 
@@ -247,9 +253,40 @@ void draw_planet (void) {
     glEnd();
   }
   
-  glFlush();
+  glutPostRedisplay();
 
+  //tickmarks
+  glColor3f(1, 1, 1);                    
+  glBegin(GL_LINES);
+  glVertex3f(-512+255, -1125, 0);
+  glVertex3f(-512+255, -1275, 0);
+  glEnd();
   
+  glColor3f(1, 1, 1);                    
+  glBegin(GL_LINES);
+  glVertex3f(-512+0, -1125, 0);
+  glVertex3f(-512+0, -1275, 0);
+  glEnd();
+  
+  glColor3f(1, 1, 1);                    
+  glBegin(GL_LINES);
+  glVertex3f(-512+511, -1125, 0);
+  glVertex3f(-512+511, -1275, 0);
+  glEnd();
+  
+  glColor3f(1, 1, 1);                    
+  glBegin(GL_LINES);
+  glVertex3f(-512+767, -1125, 0);
+  glVertex3f(-512+767, -1275, 0);
+  glEnd();
+
+  glColor3f(1, 1, 1);                    
+  glBegin(GL_LINES);
+  glVertex3f(-512+1023, -1125, 0);
+  glVertex3f(-512+1023, -1275, 0);
+  glEnd();
+
+ 
   //Color bar
   for(int i=0; i<1024; i++) {
 
@@ -262,7 +299,37 @@ void draw_planet (void) {
     glVertex3f(-512+i, -1150, 0);
     glVertex3f(-512+i, -1250, 0);
     glEnd();
+
+  
+    
   }
+
+  //cbar frame
+  glColor3f(1, 1, 1);                    
+
+  glBegin(GL_LINES);
+  glVertex3f(-512+1023, -1150, 0);
+  glVertex3f(-512+0, -1150, 0);
+  glEnd();
+
+  glBegin(GL_LINES);
+  glVertex3f(-512+1023, -1250, 0);
+  glVertex3f(-512+0, -1250, 0);
+  glEnd();
+
+  
+  glBegin(GL_LINES);
+  glVertex3f(-512+1023, -1150, 0);
+  glVertex3f(-512+1023, -1250, 0);
+  glEnd();
+
+  
+  glBegin(GL_LINES);
+  glVertex3f(-512, -1150, 0);
+  glVertex3f(-512, -1250, 0);
+  glEnd();
+
+  
   
   std::string tmax = double_to_string(Tmax,0)+" K";
   std::string tmin = double_to_string(Tmin,0)+" K";
@@ -274,30 +341,43 @@ void draw_planet (void) {
 
   glScalef(0.5 , 0.5 , 0.5) ;
   
-  glTranslatef(1150 , -2450 , 0) ;
+  glTranslatef(875 , -2700 , 0) ;
   for(int i=0; i<tmax.size(); i++){
     glutStrokeCharacter(GLUT_STROKE_ROMAN, t[i]);
   }
-  
-  t = reinterpret_cast<const unsigned char *>(tmin.c_str());
-  glTranslatef(-3100 , 0 , 0) ;
-  for(int i=0; i<tmin.size(); i++){
+  string s="1200";
+ t = reinterpret_cast<const unsigned char *>(s.c_str());
+ glTranslatef(-1000 , 0 , 0) ;
+  for(int i=0; i<s.size(); i++){
     glutStrokeCharacter(GLUT_STROKE_ROMAN, t[i]);
   }
-
+  
+  s="800";
+  t = reinterpret_cast<const unsigned char *>(s.c_str());
+  glTranslatef(-780 , 0 , 0) ;
+  for(int i=0; i<s.size(); i++){
+    glutStrokeCharacter(GLUT_STROKE_ROMAN, t[i]);
+  }
+  
+  s="400";
+  t = reinterpret_cast<const unsigned char *>(s.c_str());
+  glTranslatef(-740 , 0 , 0) ;
+  for(int i=0; i<s.size(); i++){
+    glutStrokeCharacter(GLUT_STROKE_ROMAN, t[i]);
+  }
+  
+  s="0";
+  t = reinterpret_cast<const unsigned char *>(s.c_str());
+  glTranslatef(-660 , 0 , 0) ;
+  for(int i=0; i<s.size(); i++){
+    glutStrokeCharacter(GLUT_STROKE_ROMAN, t[i]);
+  }
+  
   t = reinterpret_cast<const unsigned char *>(age.c_str());
-  glTranslatef(900 , 4900 , 0) ;
+  glTranslatef(850 , 5000 , 0) ;
   for(int i=0; i<age.size(); i++){
     glutStrokeCharacter(GLUT_STROKE_ROMAN, t[i]);
   }
-
-
-  
-  
-  glPopMatrix();
-  glFlush();
-
-  
   
   //Planet
   glLoadIdentity();
@@ -544,7 +624,7 @@ int main (int argc, char **argv) {
     cout<<"Grid Tmin="<<Tmin<<" Tmax="<<Tmax<<endl;
 
     Tmin=0;
-    Tmax=1500;
+    Tmax=1600;
     
     cout<<"Using Tmin="<<Tmin<<" Tmax="<<Tmax<<endl;
   }
@@ -556,7 +636,7 @@ int main (int argc, char **argv) {
 
   
   glutInit(&argc, argv);
-  glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE);
+  glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_MULTISAMPLE);
   
   glutInitWindowSize(720, 720);
   glutInitWindowPosition(10, 10);
